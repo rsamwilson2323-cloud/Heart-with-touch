@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Hearts Burst – PC + Mobile</title>
+<style>
+  body {
+    margin: 0;
+    overflow: hidden;
+    background: black;
+  }
+  canvas {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+  }
+</style>
+</head>
+<body>
+
+<canvas id="canvas"></canvas>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+// Resize
+function resize() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resize();
+window.onresize = resize;
+
+// State
+let hearts = [];
+let isHolding = false;
+let posX = 0;
+let posY = 0;
+
+// Burst on click/touch
+function burstOnce(x, y) {
+  for (let i = 0; i < 12; i++) {
+    hearts.push({
+      x,
+      y,
+      size: Math.random() * 25 + 10,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      opacity: 1,
+      color: `hsl(${Math.random()*360},80%,60%)`
+    });
+  }
+}
+
+// Continuous hearts when holding
+function generateContinuous() {
+  if (!isHolding) return;
+
+  for (let i = 0; i < 4; i++) {
+    hearts.push({
+      x: posX,
+      y: posY,
+      size: Math.random() * 20 + 10,
+      vx: (Math.random() - 0.5) * 6,
+      vy: (Math.random() - 0.5) * 6,
+      opacity: 1,
+      color: `hsl(${Math.random()*360},80%,60%)`
+    });
+  }
+}
+
+/* ---------------------------
+   TOUCH SUPPORT (Mobile)
+---------------------------- */
+document.addEventListener("touchstart", e => {
+  isHolding = true;
+  posX = e.touches[0].clientX;
+  posY = e.touches[0].clientY;
+  burstOnce(posX, posY);
+});
+
+document.addEventListener("touchmove", e => {
+  posX = e.touches[0].clientX;
+  posY = e.touches[0].clientY;
+});
+
+document.addEventListener("touchend", () => {
+  isHolding = false;
+});
+
+/* ---------------------------
+   MOUSE SUPPORT (PC)
+---------------------------- */
+document.addEventListener("mousedown", e => {
+  isHolding = true;
+  posX = e.clientX;
+  posY = e.clientY;
+  burstOnce(posX, posY);
+});
+
+document.addEventListener("mouseup", () => {
+  isHolding = false;
+});
+
+document.addEventListener("mousemove", e => {
+  if (isHolding) {
+    posX = e.clientX;
+    posY = e.clientY;
+  }
+});
+
+/* ---------------------------
+   Draw Heart Shape
+---------------------------- */
+function drawHeart(h) {
+  ctx.save();
+  ctx.translate(h.x, h.y);
+  ctx.scale(h.size / 50, h.size / 50);
+  ctx.globalAlpha = h.opacity;
+
+  ctx.shadowColor = h.color;
+  ctx.shadowBlur = 20;
+
+  ctx.fillStyle = h.color;
+  ctx.beginPath();
+  ctx.moveTo(25, 15);
+  ctx.bezierCurveTo(25, 0, 0, 0, 0, 15);
+  ctx.bezierCurveTo(0, 30, 25, 45, 25, 55);
+  ctx.bezierCurveTo(25, 45, 50, 30, 50, 15);
+  ctx.bezierCurveTo(50, 0, 25, 0, 25, 15);
+  ctx.fill();
+
+  ctx.restore();
+}
+
+/* ---------------------------
+   Animation Loop
+---------------------------- */
+function animate() {
+  ctx.fillStyle = "rgba(0,0,0,0.18)";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  generateContinuous();
+
+  hearts.forEach((h, i) => {
+    h.x += h.vx;
+    h.y += h.vy;
+    h.size *= 0.96;
+    h.opacity -= 0.01;
+
+    drawHeart(h);
+
+    if (h.opacity <= 0) hearts.splice(i, 1);
+  });
+
+  requestAnimationFrame(animate);
+}
+
+animate();
+</script>
+
+</body>
+</html>
